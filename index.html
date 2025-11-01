@@ -124,6 +124,32 @@
       #sparkles { font-size: 18px; white-space: pre; animation: sparklePulse 1.5s ease-in-out infinite; line-height: 1.6em; }
       @keyframes sparklePulse { 0%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.4;transform:scale(1)} }
       #loader.fade { opacity:0; visibility:hidden; }
+
+      /* --- Custom multi-select dropdown --- */
+      .msel{ position:relative; min-width:220px; }
+      .msel .control{
+        width:100%;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.18);
+        color:#f7f1e8; border-radius:10px;
+        padding:10px 12px; text-align:left; cursor:pointer;
+        font: inherit;
+      }
+      .msel.disabled .control{ opacity:.6; cursor:not-allowed; }
+      .msel .menu{
+        position:absolute; top:100%; left:0; right:0;
+        background:#2e3264; border:1px solid rgba(255,255,255,.18);
+        border-radius:10px; margin-top:6px; max-height:220px;
+        overflow:auto; display:none; z-index:100;
+        box-shadow:0 10px 24px rgba(0,0,0,.35);
+      }
+      .msel.open .menu{ display:block; }
+      .msel .row{ display:flex; align-items:center; gap:8px; padding:8px 10px; }
+      .msel .row:hover{ background:rgba(255,255,255,.06); }
+      .msel input[type="checkbox"]{ accent-color:var(--gold); }
+      .msel .placeholder{ opacity:.8; }
+
+      
     </style>
   </head>
   <body>
@@ -168,6 +194,7 @@
         <button id="clearFilters" class="clear" disabled>Clear Filters</button>
       </div>
 
+
       <div id="genres" class="genre-row"></div>
 
       <div id="panel" class="sublist" style="display:none;">
@@ -201,6 +228,9 @@
       const catSel    = document.getElementById('catSel');
       const subSel    = document.getElementById('subSel');
       const clearFiltersBtn = document.getElementById('clearFilters');
+      const catMS = makeMultiselect(document.getElementById('catMS'));
+      const subMS = makeMultiselect(document.getElementById('subMS'));
+      const clearFiltersBtn = document.getElementById('clearFilters');
 
       // Start disabled
       catSel.disabled = subSel.disabled = clearFiltersBtn.disabled = true;
@@ -233,13 +263,74 @@
         // Filter events
         catSel.addEventListener('change', applyFilter);
         subSel.addEventListener('change', applyFilter);
-        clearFiltersBtn.addEventListener('click', e => {
+        // Filter events
+        clearFiltersBtn.addEventListener('click', e=>{
           e.preventDefault();
-          [...catSel.options].forEach(o=>o.selected=false);
-          [...subSel.options].forEach(o=>o.selected=false);
+          catMS.clear(); subMS.clear();
           applyFilter();
         });
+
       }
+
+      function makeMultiselect(root){
+        const label = root.dataset.label || 'Options';
+        const state = { selected:new Set(), disabled:true };
+      
+        const control = document.createElement('button');
+        control.type = 'button';
+        control.className = 'control';
+        control.textContent = `All ${label.toLowerCase()}s`;
+        const menu = document.createElement('div'); menu.className = 'menu';
+        root.append(control, menu);
+      
+        function displayText(){
+          const n = state.selected.size;
+          return n ? `${n} selected` : `All ${label.toLowerCase()}s`;
+        }
+        function setOptions(values){
+          menu.innerHTML = '';
+          state.selected.clear();
+          values.slice().sort((a,b)=>a.localeCompare(b)).forEach(v=>{
+            const row = document.createElement('label'); row.className = 'row';
+            const cb  = document.createElement('input'); cb.type='checkbox'; cb.value=v;
+            const sp  = document.createElement('span');  sp.textContent=v;
+            row.append(cb, sp); menu.appendChild(row);
+            cb.addEventListener('change', ()=>{
+              cb.checked ? state.selected.add(v) : state.selected.delete(v);
+              control.textContent = displayText();
+              applyFilter();
+            });
+          });
+          control.textContent = displayText();
+        }
+        function setDisabled(d){
+          state.disabled = d;
+          root.classList.toggle('disabled', d);
+          control.disabled = d;
+          if (d) root.classList.remove('open');
+        }
+        function clear(){
+          state.selected.clear();
+          menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+          control.textContent = displayText();
+        }
+        control.addEventListener('click', ()=>{
+          if (state.disabled) return;
+          root.classList.toggle('open');
+        });
+        // click outside to close
+        document.addEventListener('click', (e)=>{
+          if (!root.contains(e.target)) root.classList.remove('open');
+        });
+      
+        return {
+          setOptions, setDisabled, clear,
+          getSelected: () => new Set(state.selected)
+        };
+      }
+      
+      function unique(arr){ return [...new Set(arr)]; }
+
 
       function showErr(msg){
         document.getElementById('loader').classList.add('fade');
@@ -297,34 +388,32 @@
       }
 
       function selectGenre(genre, btn){
-        activeGenre = genre;
-        document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+  activeGenre = genre;
+  document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
 
-        // enable search UI
-        qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+  // enable search UI
+  qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
 
-        // load list for this genre
-        currentItems = (byGenre.get(genre) || []).slice();
-        titleEl.textContent = genre;
-        panelEl.style.display = 'block';
-        qEl.value = '';
+  // items for this genre
+  currentItems = (byGenre.get(genre) || []).slice();
+  titleEl.textContent = genre;
+  panelEl.style.display = 'block';
+  qEl.value = '';
 
-        // --- enable filters & build options from currentItems ---
-        catSel.disabled = subSel.disabled = clearFiltersBtn.disabled = false;
+  // enable & populate dropdowns
+  catMS.setDisabled(false);
+  subMS.setDisabled(false);
+  const cats = unique(currentItems.map(it => it.category).filter(Boolean));
+  const subs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
+  catMS.setOptions(cats);
+  subMS.setOptions(subs);
 
-        const cats = unique(currentItems.map(it => it.category).filter(Boolean));
-        const subs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
+  clearFiltersBtn.disabled = false;
 
-        populateMultiSelect(catSel, cats);
-        populateMultiSelect(subSel, subs);
+  renderList(currentItems);
+}
 
-        // clear previous selections
-        [...catSel.options].forEach(o => o.selected = false);
-        [...subSel.options].forEach(o => o.selected = false);
-
-        renderList(currentItems);
-      }
 
       function renderList(items){
         errEl.textContent = '';
@@ -377,27 +466,28 @@
 
       function applyFilter(){
         if (!activeGenre) return;
-
+      
         const q = qEl.value.trim().toLowerCase();
-
-        const selCats = new Set([...catSel.options].filter(o=>o.selected).map(o=>o.value));
-        const selSubs = new Set([...subSel.options].filter(o=>o.selected).map(o=>o.value));
-        const hasCat = selCats.size > 0;
-        const hasSub = selSubs.size > 0;
-
+      
+        const selCats = catMS.getSelected();
+        const selSubs = subMS.getSelected();
+        const hasCat  = selCats.size > 0;
+        const hasSub  = selSubs.size > 0;
+      
         const filtered = currentItems.filter(it => {
-          // search over title + author
+          // text search (title + author)
           const hay = ((it.text||'') + ' ' + (it.author||'')).toLowerCase();
           if (q && !hay.includes(q)) return false;
-
+      
           if (hasCat && !selCats.has(it.category || '')) return false;
           if (hasSub && !selSubs.has(it.subcategory || '')) return false;
-
+      
           return true;
         });
-
+      
         renderList(filtered);
       }
+
 
       // ---------- Helpers ----------
       function unique(arr){ return [...new Set(arr)]; }
