@@ -1,163 +1,282 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Gilnean Royal Library</title>
-<style>
+  <head>
+    <base target="_top">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Gilnean Royal Library</title>
+    <style>
+      :root{
+        --navy:#2b2f5e; --navy-2:#2e3264; --gold:#d59a2b; --paper:#ffffff;
+      }
+      html,body{height:100%;}
+      body{margin:0;background:var(--navy);color:#f7f1e8;font-family:"Garamond","Georgia",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+      .topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px dashed rgba(255,255,255,.15)}
+      .topbar .seal{width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.15)}
+      .topbar .ministry{opacity:.9;font-size:16px;letter-spacing:.3px}
+      .wrap{max-width:1100px;margin:0 auto;padding:0 24px 48px}
+      .title{text-align:center;margin:28px 0 10px;font-size:54px;letter-spacing:2px;color:var(--gold);font-weight:600;text-transform:uppercase}
+      .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);margin:18px 0 26px}
+      .section-title{text-align:center;color:var(--gold);font-size:24px;letter-spacing:1px;text-transform:uppercase;margin:10px 0 14px}
 
-:root{--navy:#2b2f5e;--navy-2:#2e3264;--gold:#d59a2b;--paper:#fff}
-body{margin:0;background:var(--navy);color:#f7f1e8;font-family:Garamond,Georgia,serif}
-.wrap{max-width:1100px;margin:0 auto;padding:32px 24px}
-.title{color:var(--gold);text-align:center;font-size:54px;letter-spacing:2px;text-transform:uppercase;margin:12px 0 8px}
-.section{color:var(--gold);text-align:center;font-size:22px;margin:18px 0 14px;text-transform:uppercase}
-.search-wrap{display:flex;justify-content:center;margin:8px 0 18px}
-.search{width:min(680px,100%);display:flex;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:10px 12px}
-.search input{flex:1;background:transparent;border:0;outline:none;color:#fff;font-size:16px}
-.search button{background:var(--gold);border:0;border-radius:8px;color:#2b2f5e;padding:8px 12px;font-weight:600;cursor:pointer}
-.search .clear{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff}
-.genre-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px;margin:18px 0 12px}
-.genre-btn{background:var(--paper);color:var(--navy-2);border:0;border-radius:8px;padding:14px 18px;font-size:18px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
-.genre-btn.active{outline:2px solid var(--gold);background:#fffdf7}
-.sublist{margin-top:24px;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:16px 18px}
-.items{list-style:none;padding:0;margin:0}
-.items li{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.09)}
-.items a{color:var(--gold);text-decoration:none;font-size:18px}
-.items a:hover{text-decoration:underline}
-.empty{color:#cbd0ea;font-style:italic;padding:6px 2px}
-.footer{margin-top:10px;color:#c8cdeb;font-size:13px}
-.err{margin-top:12px;color:#ffb3b3;white-space:pre-wrap;font-size:13px}
-#loader{position:fixed;inset:0;background:radial-gradient(circle at center,#2e3264 0%,#1a1c35 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:999;color:#f7f1e8;font-family:Garamond,Georgia,serif;text-align:center;letter-spacing:1px;transition:opacity .8s,visibility .8s}
-#sparkles{font-size:18px;white-space:pre;animation:sparklePulse 1.5s ease-in-out infinite;line-height:1.6em}
-@keyframes sparklePulse{0%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.4;transform:scale(1)}}
-#loader.fade{opacity:0;visibility:hidden}
-</style>
-</head>
-<body>
-<div id="loader"><pre id="sparkles">
-   ✨ ✶  ⋆  ✨
- ⊹  The Library awakens...  ⋆
-✨  ⊹ ⋆ ⋆ ✨ ⋆ ✶
-</pre></div>
+      /* Search bar */
+      .search-wrap{display:flex;justify-content:center;margin:8px 0 18px}
+      .search{
+        width:min(680px,100%);display:flex;gap:10px;
+        background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);
+        border-radius:10px;padding:10px 12px
+      }
+      .search input{
+        flex:1;background:transparent;border:0;outline:none;color:#fff;
+        font-size:16px;letter-spacing:.2px
+      }
+      .search button{
+        background:var(--gold);border:0;border-radius:8px;color:#2b2f5e;
+        padding:8px 12px;font-weight:600;cursor:pointer
+      }
+      .search input::placeholder{color:#cfd3e6}
+      .search input:disabled{opacity:.6}
+      .search .clear{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff}
 
-<div class="wrap">
-  <div class="title">Gilnean Royal Library</div>
-  <div class="section">Genre Selection</div>
+      /* Genre buttons */
+      .genre-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px;margin:18px 0 12px}
+      .genre-btn{
+        background:var(--paper);color:var(--navy-2);border:0;border-radius:8px;padding:14px 18px;font-size:18px;
+        cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25);
+        transition:transform .08s ease,box-shadow .2s ease,background .2s ease;
+        font-family:"Garamond","Georgia",serif;
+      }
+      .genre-btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(0,0,0,.35)}
+      .genre-btn.active{outline:2px solid var(--gold);background:#fffdf7}
 
-  <!-- Search (filters current genre) -->
-  <div class="search-wrap">
-    <div class="search">
-      <input id="q" type="text" placeholder="Filter current genre…" disabled>
-      <button id="clear" class="clear" disabled>Clear</button>
-      <button id="searchBtn" disabled>Search</button>
+      /* Sub-list */
+      .sublist{margin-top:24px;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.18);border-radius:10px;padding:16px 18px}
+      .sublist h3{margin:0 0 10px;font-weight:600;color:#f1e5cf;letter-spacing:.5px}
+      .items{list-style:none;padding:0;margin:0}
+      .items li{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.09)}
+      .items li:last-child{border-bottom:0}
+      .items a{color:var(--gold);text-decoration:none;font-size:18px}
+      .items a:hover{text-decoration:underline}
+      .empty{color:#cbd0ea;font-style:italic;padding:6px 2px}
+      .footer{margin-top:10px;color:#c8cdeb;font-size:13px}
+      .err{margin-top:12px;color:#ffb3b3;white-space:pre-wrap;font-size:13px}
+
+      /* --- Whimsical Loader --- */
+      #loader {
+        position: fixed;
+        inset: 0;
+        background: radial-gradient(circle at center, #2e3264 0%, #1a1c35 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        z-index: 999;
+        color: #f7f1e8;
+        font-family: "Garamond","Georgia",serif;
+        text-align: center;
+        letter-spacing: 1px;
+        transition: opacity 0.8s ease, visibility 0.8s ease;
+      }
+      #sparkles {
+        font-size: 18px;
+        white-space: pre;
+        animation: sparklePulse 1.5s ease-in-out infinite;
+        line-height: 1.6em;
+      }
+      @keyframes sparklePulse {
+        0% { opacity: 0.4; transform: scale(1);}
+        50%{ opacity: 1; transform: scale(1.05);}
+        100%{ opacity: 0.4; transform: scale(1);}
+      }
+      #loader.fade {
+        opacity: 0;
+        visibility: hidden;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loader">
+      <pre id="sparkles">
+     ✨ ✶  ⋆  ✨
+   ⊹  The Library awakens...  ⊹
+    ✨ ⋆ ✨ ✶ ✨
+      </pre>
     </div>
-  </div>
 
-  <div id="genres" class="genre-row"></div>
+    <div class="topbar">
+      <div class="seal"></div>
+      <div class="ministry">Ministry of the Home Office</div>
+    </div>
 
-  <div id="panel" class="sublist" style="display:none;">
-    <h3 id="panelTitle">Selected Genre</h3>
-    <ul id="items" class="items"></ul>
-    <div id="footer" class="footer"></div>
-    <div id="err" class="err"></div>
-  </div>
-</div>
+    <div class="wrap">
+      <div class="title">Gilnean Royal Library</div>
+      <div class="divider"></div>
 
-<script>
-const API = 'https://script.google.com/macros/s/AKfycbyrsTDK1h5DJfyZkzL1Wocp3Axy8TfBEbLCkB-4FTxG3wN9Dhv2_EZ2Xau7gBk1TsDT/exec'; // 
-let byGenre = new Map();
-let activeGenre = null;
-let currentItems = [];
+      <div class="section-title">Genre Selection</div>
 
-const genresEl = document.getElementById('genres');
-const panelEl  = document.getElementById('panel');
-const titleEl  = document.getElementById('panelTitle');
-const listEl   = document.getElementById('items');
-const footerEl = document.getElementById('footer');
-const errEl    = document.getElementById('err');
-const qEl      = document.getElementById('q');
-const clearEl  = document.getElementById('clear');
-const searchBtn= document.getElementById('searchBtn');
+      <!-- Genre-scoped search bar (disabled until a genre is selected) -->
+      <div class="search-wrap">
+        <div class="search">
+          <input id="q" type="text" placeholder="Filter current genre…" disabled>
+          <button id="clear" class="clear" disabled>Clear</button>
+          <button id="searchBtn" disabled>Search</button>
+        </div>
+      </div>
 
-// Load once (no Google account needed)
-fetch(API).then(r=>r.json()).then(({data})=>{
-  const map = new Map();
-  for (const r of data) {
-    const g = (r.genre||'').toString().trim();
-    const t = (r.text ||'').toString().trim();
-    if (!g || !t) continue;
-    if (!map.has(g)) map.set(g, []);
-    map.get(g).push({ text:t, url:r.url||null });
-  }
-  byGenre = map;
-  hideLoader();
-  renderGenres();
-  wireSearch();
-}).catch(e=>showErr('Load failed: '+(e?.message||e)));
+      <div id="genres" class="genre-row"></div>
 
-function renderGenres(){
-  genresEl.innerHTML = '';
-  const genres = [...byGenre.keys()].sort((a,b)=>a.localeCompare(b));
-  if (!genres.length){
-    genresEl.innerHTML = `<div class="empty">No genres found.</div>`;
-    return;
-  }
-  genres.forEach(g=>{
-    const btn = document.createElement('button');
-    btn.className = 'genre-btn';
-    btn.textContent = g;
-    btn.onclick = ()=>selectGenre(g, btn);
-    genresEl.appendChild(btn);
-  });
-}
-function selectGenre(genre, btn){
-  activeGenre = genre;
-  document.querySelectorAll('.genre-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+      <div id="panel" class="sublist" style="display:none;">
+        <h3 id="panelTitle">Selected Genre</h3>
+        <ul id="items" class="items"></ul>
+        <div id="footer" class="footer"></div>
+        <div id="err" class="err"></div>
+      </div>
+    </div>
 
-  currentItems = (byGenre.get(genre)||[]).slice();
-  titleEl.textContent = genre;
-  panelEl.style.display = 'block';
-  qEl.value = '';
-  renderList(currentItems);
-}
-function renderList(items){
-  errEl.textContent=''; listEl.innerHTML='';
-  if (!items.length){ listEl.innerHTML = `<li class="empty">No entries.</li>`; footerEl.textContent='0 items'; return; }
-  for (const it of items){
-    const li = document.createElement('li');
-    if (it.url){ const a=document.createElement('a'); a.href=it.url; a.target='_blank'; a.rel='noopener'; a.textContent=it.text; li.appendChild(a); }
-    else { li.textContent = it.text; }
-    listEl.appendChild(li);
-  }
-  footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
-}
-function showErr(msg){
-  hideLoader();
-  panelEl.style.display='block';
-  titleEl.textContent='Error';
-  listEl.innerHTML='';
-  footerEl.textContent='';
-  errEl.textContent=msg;
-}
-function hideLoader(){ document.getElementById('loader').classList.add('fade'); }
+    <script>
+      // ====== ONLY CHANGE: where we load data from ======
+      const API = 'YOUR_EXEC_URL'; // ← paste your Apps Script /exec URL
 
-// Search wiring
-function wireSearch(){
-  const debounced = debounce(applyFilter, 150);
-  qEl.addEventListener('input', debounced);
-  searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
-  clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
-  qEl.addEventListener('keydown', e => { if (e.key==='Escape'){ qEl.value=''; applyFilter(); } });
-}
-function applyFilter(){
-  if (!activeGenre) return;
-  const q = qEl.value.trim().toLowerCase();
-  if (!q){ renderList(currentItems); return; }
-  renderList(currentItems.filter(it => (it.text||'').toLowerCase().includes(q)));
-}
-function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-</script>
-</body>
+      // ===== State =====
+      let rows = [];            // [{text, url, genre}]
+      let byGenre = new Map();  // genre -> [{text,url}]
+      let activeGenre = null;
+      let currentItems = [];    // full list for active genre (unfiltered)
+
+      // Elements
+      const genresEl = document.getElementById('genres');
+      const panelEl  = document.getElementById('panel');
+      const titleEl  = document.getElementById('panelTitle');
+      const listEl   = document.getElementById('items');
+      const footerEl = document.getElementById('footer');
+      const errEl    = document.getElementById('err');
+
+      const qEl      = document.getElementById('q');
+      const clearEl  = document.getElementById('clear');
+      const searchBtn= document.getElementById('searchBtn');
+
+      // ===== Load data once (no google.script.run; works on GitHub Pages) =====
+      window.addEventListener('load', () => {
+        fetch(API)
+          .then(r => {
+            if (!r.ok) throw new Error('Network error: ' + r.status);
+            return r.json();
+          })
+          .then(({ data }) => {
+            // hide loader
+            document.getElementById('loader').classList.add('fade');
+
+            rows = Array.isArray(data) ? data : [];
+            byGenre = new Map();
+            for (const r of rows){
+              const g = (r?.genre || '').toString().trim();
+              const t = (r?.text  || '').toString().trim();
+              if (!g || !t) continue;
+              if (!byGenre.has(g)) byGenre.set(g, []);
+              byGenre.get(g).push({ text: t, url: r?.url || null });
+            }
+            renderGenres();
+            wireSearch();
+          })
+          .catch(e => showErr(e?.message || String(e)));
+      });
+
+      function renderGenres(){
+        genresEl.innerHTML = '';
+        const genres = Array.from(byGenre.keys()).sort((a,b)=>a.localeCompare(b));
+        if (!genres.length){
+          genresEl.innerHTML = `<div class="empty">No genres found in Column C (rows 7–100).</div>`;
+          return;
+        }
+        genres.forEach(g => {
+          const btn = document.createElement('button');
+          btn.className = 'genre-btn';
+          btn.textContent = g;
+          btn.onclick = () => selectGenre(g, btn);
+          genresEl.appendChild(btn);
+        });
+      }
+
+      function selectGenre(genre, btn){
+        activeGenre = genre;
+
+        // highlight active button
+        document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // enable search UI
+        qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+
+        // load list for this genre
+        currentItems = (byGenre.get(genre) || []).slice(); // copy
+        titleEl.textContent = genre;
+        panelEl.style.display = 'block';
+
+        // reset query and render full list
+        qEl.value = '';
+        renderList(currentItems);
+      }
+
+      // Render list items (expects array of {text,url})
+      function renderList(items){
+        errEl.textContent = '';
+        listEl.innerHTML = '';
+        if (!items.length){
+          listEl.innerHTML = `<li class="empty">No entries for this genre.</li>`;
+          footerEl.textContent = '0 items';
+          return;
+        }
+        for (const it of items){
+          const li = document.createElement('li');
+          if (it.url){
+            const a = document.createElement('a');
+            a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+            a.textContent = it.text;
+            li.appendChild(a);
+          } else {
+            li.textContent = it.text;
+          }
+          listEl.appendChild(li);
+        }
+        footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
+      }
+
+      function showErr(msg){
+        // hide loader (so the error is visible)
+        document.getElementById('loader').classList.add('fade');
+        panelEl.style.display = 'block';
+        titleEl.textContent = 'Error';
+        listEl.innerHTML = '';
+        footerEl.textContent = '';
+        errEl.textContent = msg;
+      }
+
+      // ===== Search wiring (filters ONLY current genre) =====
+      function wireSearch(){
+        // Debounced filter while typing
+        const debounced = debounce(applyFilter, 150);
+        qEl.addEventListener('input', debounced);
+
+        // "Search" button just triggers the same
+        searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
+
+        // Clear button & Esc key
+        clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
+        qEl.addEventListener('keydown', e => {
+          if (e.key === 'Escape'){ qEl.value=''; applyFilter(); }
+        });
+      }
+
+      function applyFilter(){
+        if (!activeGenre){ return; }
+        const q = qEl.value.trim().toLowerCase();
+        if (!q){ renderList(currentItems); return; }
+        const filtered = currentItems.filter(it => (it.text || '').toLowerCase().includes(q));
+        renderList(filtered);
+      }
+
+      // simple debounce
+      function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
+    </script>
+  </body>
 </html>
