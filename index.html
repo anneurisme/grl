@@ -5,6 +5,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gilnean Royal Library</title>
+    <!-- prevent favicon 404 -->
+    <link rel="icon" href="data:,">
     <style>
       :root{ --navy:#2b2f5e; --navy-2:#2e3264; --gold:#d59a2b; --paper:#ffffff; }
       html,body{height:100%;}
@@ -154,27 +156,32 @@
       let activeGenre = null;
       let currentItems = [];
 
-      // Elements
-      const genresEl  = document.getElementById('genres');
-      const panelEl   = document.getElementById('panel');
-      const titleEl   = document.getElementById('panelTitle');
-      const listEl    = document.getElementById('items');
-      const footerEl  = document.getElementById('footer');
-      const errEl     = document.getElementById('err');
-      const qEl       = document.getElementById('q');
-      const clearEl   = document.getElementById('clear');
-      const searchBtn = document.getElementById('searchBtn');
-      const clearFiltersBtn = document.getElementById('clearFilters');
-
-      // Custom multi-selects
-      const catMS = makeMultiselect(document.getElementById('catMS'));
-      const subMS = makeMultiselect(document.getElementById('subMS'));
-      catMS.setDisabled(true);
-      subMS.setDisabled(true);
-      clearFiltersBtn.disabled = true;
+      // Elements (declared now; assigned after DOM is fully ready)
+      let genresEl, panelEl, titleEl, listEl, footerEl, errEl;
+      let qEl, clearEl, searchBtn, clearFiltersBtn;
+      let catMS, subMS;
 
       // ---------- Init / Load ----------
       window.addEventListener('load', () => {
+        // Now it's safe to query the DOM
+        genresEl  = document.getElementById('genres');
+        panelEl   = document.getElementById('panel');
+        titleEl   = document.getElementById('panelTitle');
+        listEl    = document.getElementById('items');
+        footerEl  = document.getElementById('footer');
+        errEl     = document.getElementById('err');
+        qEl       = document.getElementById('q');
+        clearEl   = document.getElementById('clear');
+        searchBtn = document.getElementById('searchBtn');
+        clearFiltersBtn = document.getElementById('clearFilters');
+
+        // Build custom multiselects AFTER elements exist
+        catMS = makeMultiselect(document.getElementById('catMS'));
+        subMS = makeMultiselect(document.getElementById('subMS'));
+        catMS.setDisabled(true);
+        subMS.setDisabled(true);
+        clearFiltersBtn.disabled = true;
+
         const slowTimer = setTimeout(() => {
           if (!document.getElementById('loader').classList.contains('fade')) {
             showErr('Loading is taking longer than expected. Please check the API URL or try again.');
@@ -367,8 +374,13 @@
       function unique(arr){ return [...new Set(arr)]; }
       function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
 
-      // Custom multi-select dropdown
+      // Custom multi-select dropdown (with a guard)
       function makeMultiselect(root){
+        if (!root) {
+          console.error('Multiselect root not found');
+          // No-op shim so the app doesn’t crash
+          return { setOptions(){}, setDisabled(){}, clear(){}, getSelected(){ return new Set(); } };
+        }
         const label = root.dataset.label || 'Options';
         const state = { selected:new Set(), disabled:true };
 
