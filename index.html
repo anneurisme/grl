@@ -133,150 +133,170 @@
       </div>
     </div>
 
-    <script>
-      // ====== ONLY CHANGE: where we load data from ======
-      const API = 'YOUR_EXEC_URL'; // ← paste your Apps Script /exec URL
+<script>
+  // ====== ONLY change: where data comes from (works on GitHub Pages) ======
+  const API = 'https://script.google.com/macros/s/AKfycbyrsTDK1h5DJfyZkzL1Wocp3Axy8TfBEbLCkB-4FTxG3wN9Dhv2_EZ2Xau7gBk1TsDT/exec'; // ← paste your Apps Script /exec URL exactly
 
-      // ===== State =====
-      let rows = [];            // [{text, url, genre}]
-      let byGenre = new Map();  // genre -> [{text,url}]
-      let activeGenre = null;
-      let currentItems = [];    // full list for active genre (unfiltered)
+  // State (unchanged)
+  let rows = [];            // [{text, url, genre}]
+  let byGenre = new Map();  // genre -> [{text,url}]
+  let activeGenre = null;
+  let currentItems = [];
 
-      // Elements
-      const genresEl = document.getElementById('genres');
-      const panelEl  = document.getElementById('panel');
-      const titleEl  = document.getElementById('panelTitle');
-      const listEl   = document.getElementById('items');
-      const footerEl = document.getElementById('footer');
-      const errEl    = document.getElementById('err');
+  // Elements (unchanged)
+  const genresEl = document.getElementById('genres');
+  const panelEl  = document.getElementById('panel');
+  const titleEl  = document.getElementById('panelTitle');
+  const listEl   = document.getElementById('items');
+  const footerEl = document.getElementById('footer');
+  const errEl    = document.getElementById('err');
+  const qEl      = document.getElementById('q');
+  const clearEl  = document.getElementById('clear');
+  const searchBtn= document.getElementById('searchBtn');
 
-      const qEl      = document.getElementById('q');
-      const clearEl  = document.getElementById('clear');
-      const searchBtn= document.getElementById('searchBtn');
+  // --- Helper to finish init (same as your old init(), but split so we can call from fetch or JSONP) ---
+  function finishInit(data) {
+    // hide loader
+    document.getElementById('loader').classList.add('fade');
 
-      // ===== Load data once (no google.script.run; works on GitHub Pages) =====
-      window.addEventListener('load', () => {
-        fetch(API)
-          .then(r => {
-            if (!r.ok) throw new Error('Network error: ' + r.status);
-            return r.json();
-          })
-          .then(({ data }) => {
-            // hide loader
-            document.getElementById('loader').classList.add('fade');
+    rows = Array.isArray(data) ? data : [];
+    byGenre = new Map();
+    for (const r of rows){
+      const g = (r?.genre || '').toString().trim();
+      const t = (r?.text  || '').toString().trim();
+      if (!g || !t) continue;
+      if (!byGenre.has(g)) byGenre.set(g, []);
+      byGenre.get(g).push({ text: t, url: r?.url || null });
+    }
+    renderGenres();
+    wireSearch();
+  }
 
-            rows = Array.isArray(data) ? data : [];
-            byGenre = new Map();
-            for (const r of rows){
-              const g = (r?.genre || '').toString().trim();
-              const t = (r?.text  || '').toString().trim();
-              if (!g || !t) continue;
-              if (!byGenre.has(g)) byGenre.set(g, []);
-              byGenre.get(g).push({ text: t, url: r?.url || null });
-            }
-            renderGenres();
-            wireSearch();
-          })
-          .catch(e => showErr(e?.message || String(e)));
+  // --- Error handler that also hides loader so you can see the UI frame ---
+  function showErr(msg){
+    document.getElementById('loader').classList.add('fade');
+    panelEl.style.display = 'block';
+    titleEl.textContent = 'Error';
+    listEl.innerHTML = '';
+    footerEl.textContent = '';
+    errEl.textContent = msg;
+    console.error(msg);
+  }
+
+  // --- JSONP fallback (avoids CORS entirely) ---
+  function loadViaJSONP() {
+    const cb = 'initFromAPI_' + Math.random().toString(36).slice(2);
+    window[cb] = function(payload){
+      try {
+        finishInit(payload && payload.data);
+      } catch (e) {
+        showErr('JSONP parse error: ' + (e?.message || e));
+      } finally {
+        // cleanup
+        delete window[cb];
+        if (script && script.parentNode) script.parentNode.removeChild(script);
+      }
+    };
+    const url = API + (API.includes('?') ? '&' : '?') + 'callback=' + encodeURIComponent(cb);
+    const script = document.createElement('script');
+    script.src = url;
+    script.onerror = () => showErr('JSONP load failed. Check your /exec URL.');
+    document.head.appendChild(script);
+  }
+
+  // --- Preferred: fetch JSON; if it fails (CORS, etc.), fall back to JSONP ---
+  window.addEventListener('load', () => {
+    // Safety: fade loader after 8s so you’re never “stuck” unseen
+    setTimeout(() => {
+      const loader = document.getElementById('loader');
+      if (loader && !loader.classList.contains('fade')) {
+        showErr('Loading is taking longer than expected. Please check the API URL or try again.');
+      }
+    }, 8000);
+
+    fetch(API, { mode: 'cors' })
+      .then(r => {
+        // Some CORS failures look like "TypeError: Failed to fetch" and never reach here.
+        if (!r.ok) throw new Error('Network error: ' + r.status);
+        // If the server didn't set CORS headers, the browser may still block .json().
+        return r.json();
+      })
+      .then(({ data }) => finishInit(data))
+      .catch(err => {
+        console.warn('Fetch failed, falling back to JSONP:', err);
+        loadViaJSONP();
       });
+  });
 
-      function renderGenres(){
-        genresEl.innerHTML = '';
-        const genres = Array.from(byGenre.keys()).sort((a,b)=>a.localeCompare(b));
-        if (!genres.length){
-          genresEl.innerHTML = `<div class="empty">No genres found in Column C (rows 7–100).</div>`;
-          return;
-        }
-        genres.forEach(g => {
-          const btn = document.createElement('button');
-          btn.className = 'genre-btn';
-          btn.textContent = g;
-          btn.onclick = () => selectGenre(g, btn);
-          genresEl.appendChild(btn);
-        });
+  // ===== keep your existing functions below (renderGenres, selectGenre, renderList, wireSearch, applyFilter, debounce) =====
+  function renderGenres(){
+    genresEl.innerHTML = '';
+    const genres = Array.from(byGenre.keys()).sort((a,b)=>a.localeCompare(b));
+    if (!genres.length){
+      genresEl.innerHTML = `<div class="empty">No genres found in Column C (rows 7–100).</div>`;
+      return;
+    }
+    genres.forEach(g => {
+      const btn = document.createElement('button');
+      btn.className = 'genre-btn';
+      btn.textContent = g;
+      btn.onclick = () => selectGenre(g, btn);
+      genresEl.appendChild(btn);
+    });
+  }
+
+  function selectGenre(genre, btn){
+    activeGenre = genre;
+    document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+    currentItems = (byGenre.get(genre) || []).slice();
+    titleEl.textContent = genre;
+    panelEl.style.display = 'block';
+    qEl.value = '';
+    renderList(currentItems);
+  }
+
+  function renderList(items){
+    errEl.textContent = '';
+    listEl.innerHTML = '';
+    if (!items.length){
+      listEl.innerHTML = `<li class="empty">No entries for this genre.</li>`;
+      footerEl.textContent = '0 items';
+      return;
+    }
+    for (const it of items){
+      const li = document.createElement('li');
+      if (it.url){
+        const a = document.createElement('a');
+        a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+        a.textContent = it.text;
+        li.appendChild(a);
+      } else {
+        li.textContent = it.text;
       }
+      listEl.appendChild(li);
+    }
+    footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
+  }
 
-      function selectGenre(genre, btn){
-        activeGenre = genre;
+  function wireSearch(){
+    const debounced = debounce(applyFilter, 150);
+    qEl.addEventListener('input', debounced);
+    searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
+    clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
+    qEl.addEventListener('keydown', e => { if (e.key === 'Escape'){ qEl.value=''; applyFilter(); } });
+  }
 
-        // highlight active button
-        document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+  function applyFilter(){
+    if (!activeGenre){ return; }
+    const q = qEl.value.trim().toLowerCase();
+    if (!q){ renderList(currentItems); return; }
+    const filtered = currentItems.filter(it => (it.text || '').toLowerCase().includes(q));
+    renderList(filtered);
+  }
 
-        // enable search UI
-        qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
-
-        // load list for this genre
-        currentItems = (byGenre.get(genre) || []).slice(); // copy
-        titleEl.textContent = genre;
-        panelEl.style.display = 'block';
-
-        // reset query and render full list
-        qEl.value = '';
-        renderList(currentItems);
-      }
-
-      // Render list items (expects array of {text,url})
-      function renderList(items){
-        errEl.textContent = '';
-        listEl.innerHTML = '';
-        if (!items.length){
-          listEl.innerHTML = `<li class="empty">No entries for this genre.</li>`;
-          footerEl.textContent = '0 items';
-          return;
-        }
-        for (const it of items){
-          const li = document.createElement('li');
-          if (it.url){
-            const a = document.createElement('a');
-            a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-            a.textContent = it.text;
-            li.appendChild(a);
-          } else {
-            li.textContent = it.text;
-          }
-          listEl.appendChild(li);
-        }
-        footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
-      }
-
-      function showErr(msg){
-        // hide loader (so the error is visible)
-        document.getElementById('loader').classList.add('fade');
-        panelEl.style.display = 'block';
-        titleEl.textContent = 'Error';
-        listEl.innerHTML = '';
-        footerEl.textContent = '';
-        errEl.textContent = msg;
-      }
-
-      // ===== Search wiring (filters ONLY current genre) =====
-      function wireSearch(){
-        // Debounced filter while typing
-        const debounced = debounce(applyFilter, 150);
-        qEl.addEventListener('input', debounced);
-
-        // "Search" button just triggers the same
-        searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
-
-        // Clear button & Esc key
-        clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
-        qEl.addEventListener('keydown', e => {
-          if (e.key === 'Escape'){ qEl.value=''; applyFilter(); }
-        });
-      }
-
-      function applyFilter(){
-        if (!activeGenre){ return; }
-        const q = qEl.value.trim().toLowerCase();
-        if (!q){ renderList(currentItems); return; }
-        const filtered = currentItems.filter(it => (it.text || '').toLowerCase().includes(q));
-        renderList(filtered);
-      }
-
-      // simple debounce
-      function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-    </script>
+  function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
+</script>
   </body>
 </html>
