@@ -352,7 +352,7 @@
           const meta = document.createElement('div');
           meta.className = 'meta';
           
-          // Left side: author + optional TRP
+          // Left: author + TRP (if any)
           const left = document.createElement('div');
           left.className = 'left';
           left.innerHTML = `
@@ -360,15 +360,15 @@
             ${it.trp ? `<div class="trp">TRP: ${it.trp}</div>` : ''}
           `;
           
-          // Right side: publishing date
+          // Right: date
           const right = document.createElement('div');
           right.className = 'right';
           right.textContent = it.date ? `Publishing Date: ${it.date}` : 'Publishing Date: —';
           
-          // Combine
           meta.appendChild(left);
           meta.appendChild(right);
           li.appendChild(meta);
+
 
 
           listEl.appendChild(li);
