@@ -397,20 +397,23 @@
           // Event handler for the Copy TRP button
           if (it.trp) {
             left.querySelector('.copy-trp').addEventListener('click', async (e) => {
-              const trp = e.currentTarget.dataset.trp;
-              try {
-                await navigator.clipboard.writeText(trp);
-                e.currentTarget.textContent = 'Copied!';
-                e.currentTarget.disabled = true;
-                setTimeout(() => {
-                  e.currentTarget.textContent = 'Copy TRP';
-                  e.currentTarget.disabled = false;
-                }, 1200);
-              } catch (err) {
-                console.error('Clipboard copy failed', err);
-                alert('Could not copy TRP automatically. Please copy manually:\n' + trp);
-              }
-            });
+            const btn = e.currentTarget;
+            const trp = btn.dataset.trp;
+          
+            const ok = await copyToClipboard(trp);
+            if (ok) {
+              btn.textContent = 'Copied!';
+              btn.disabled = true;
+              setTimeout(() => {
+                btn.textContent = 'Copy TRP';
+                btn.disabled = false;
+              }, 1200);
+            } else {
+              // Last-resort prompt so the user can copy manually
+              window.prompt('Copy TRP:', trp);
+            }
+          });
+
           }
 
 
@@ -518,6 +521,32 @@
           getSelected: () => new Set(state.selected)
         };
       }
+
+      async function copyToClipboard(text) {
+        // Try modern Clipboard API
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (_) { /* fall through */ }
+      
+        // Fallback: hidden textarea + execCommand
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          ta.style.pointerEvents = 'none';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          const ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+          return ok;
+        } catch (_) {
+          return false;
+        }
+      }
+
     </script>
   </body>
 </html>
