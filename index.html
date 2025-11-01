@@ -32,7 +32,6 @@
       .search input::placeholder{color:#cfd3e6}
       .search input:disabled{opacity:.6}
       .search .clear{background:transparent;border:1px solid rgba(255,255,255,.35);color:#fff}
-      /* Make any .clear button look like the search's Clear button, even outside .search */
       button.clear{
         background: transparent;
         border: 1px solid rgba(255,255,255,.35);
@@ -50,8 +49,8 @@
         cursor: not-allowed;
       }
       button.clear {
-        font-size: 16px;              /* Match the search input font size */
-        letter-spacing: .2px;         /* Keeps the Garamond style spacing consistent */
+        font-size: 16px;             
+        letter-spacing: .2px;       
         transition: border-color .2s ease, opacity .2s ease;
       }
 
@@ -90,6 +89,12 @@
       .meta .left,.meta .right{ display:inline-block; }
       .meta .left{ text-align:left; }
       .meta .right{ text-align:right; margin-left:auto; }
+      .meta .trp {
+        font-style: italic;
+        color: #e0d9c7;
+        font-size: 13px;
+        margin-top: 2px;
+      }
       @media (max-width:600px){ .meta{ flex-direction:column; align-items:flex-start; gap:2px; } .meta .right{ margin-left:0; text-align:left; } }
 
       /* Loader */
@@ -145,7 +150,7 @@
         </div>
       </div>
 
-      <!-- Filters: Category & Subcategory (disabled until a genre is chosen) -->
+      <!-- Filters - Category & Subcategory (disabled until a genre is chosen) -->
       <div class="filters">
         <div class="filter">
           <label>Category</label>
@@ -345,15 +350,25 @@
 
           const meta = document.createElement('div');
           meta.className = 'meta';
-          const left = document.createElement('span');
+          
+          // Left side: author + optional TRP
+          const left = document.createElement('div');
           left.className = 'left';
-          left.textContent = it.author ? `Authored by: ${it.author}` : 'Authored by: —';
-          const right = document.createElement('span');
+          left.innerHTML = `
+            <div>${it.author ? `Authored by: ${it.author}` : 'Authored by: —'}</div>
+            ${it.trp ? `<div class="trp">TRP: ${it.trp}</div>` : ''}
+          `;
+          
+          // Right side: publishing date
+          const right = document.createElement('div');
           right.className = 'right';
           right.textContent = it.date ? `Publishing Date: ${it.date}` : 'Publishing Date: —';
+          
+          // Combine
           meta.appendChild(left);
           meta.appendChild(right);
           li.appendChild(meta);
+
 
           listEl.appendChild(li);
         }
