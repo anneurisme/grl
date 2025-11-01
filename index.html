@@ -105,16 +105,38 @@
       .meta {
         display: flex;
         justify-content: space-between;
-        gap: 12px;
-        margin-top: 4px;
+        align-items: center;
+        margin-top: 2px;
         color: #c8cdeb;
         font-size: 14px;
-        line-height: 1.3;
+        line-height: 1.4;
+        width: 100%;
       }
-      .meta .left { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .meta .right { white-space: nowrap; }
-      @media (max-width: 520px){
-        .meta { flex-direction: column; align-items: flex-start; }
+      
+      .meta .left,
+      .meta .right {
+        display: inline-block;
+      }
+      
+      .meta .left {
+        text-align: left;
+      }
+      
+      .meta .right {
+        text-align: right;
+        margin-left: auto;
+      }
+      
+      @media (max-width: 600px) {
+        .meta {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+        }
+        .meta .right {
+          margin-left: 0;
+          text-align: left;
+        }
       }
     </style>
   </head>
