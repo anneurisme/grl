@@ -176,7 +176,12 @@
       const t = (r?.text  || '').toString().trim();
       if (!g || !t) continue;
       if (!byGenre.has(g)) byGenre.set(g, []);
-      byGenre.get(g).push({ text: t, url: r?.url || null });
+      byGenre.get(g).push({
+        text: t,
+        url: r?.url || null,
+        author: (r?.author || '').toString(),
+        date: (r?.date || '').toString()
+      });
     }
     renderGenres();
     wireSearch();
@@ -277,14 +282,36 @@
     }
     for (const it of items){
       const li = document.createElement('li');
+  
+      // Title (hotlink if url present)
       if (it.url){
         const a = document.createElement('a');
         a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
         a.textContent = it.text;
         li.appendChild(a);
       } else {
-        li.textContent = it.text;
+        const title = document.createElement('div');
+        title.textContent = it.text;
+        title.style.fontSize = '18px';
+        li.appendChild(title);
       }
+  
+      // Meta line: author (left) and date (right)
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+  
+      const left = document.createElement('span');
+      left.className = 'left';
+      left.textContent = it.author ? `Authored by: ${it.author}` : 'Authored by: —';
+  
+      const right = document.createElement('span');
+      right.className = 'right';
+      right.textContent = it.date ? `Publishing Date: ${it.date}` : 'Publishing Date: —';
+  
+      meta.appendChild(left);
+      meta.appendChild(right);
+      li.appendChild(meta);
+  
       listEl.appendChild(li);
     }
     footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
