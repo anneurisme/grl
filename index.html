@@ -95,6 +95,26 @@
         font-size: 13px;
         margin-top: 2px;
       }
+      .copy-trp {
+        background: transparent;
+        border: 1px solid rgba(255,255,255,.35);
+        color: #fff;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 13px;
+        font-style: italic;
+        cursor: pointer;
+        transition: all .2s ease;
+      }
+      .copy-trp:hover {
+        border-color: var(--gold);
+        color: var(--gold);
+      }
+      .copy-trp:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+      }
+
       @media (max-width:600px){ .meta{ flex-direction:column; align-items:flex-start; gap:2px; } .meta .right{ margin-left:0; text-align:left; } }
 
       /* Loader */
@@ -352,13 +372,18 @@
           const meta = document.createElement('div');
           meta.className = 'meta';
           
-          // Left: author + TRP (if any)
+          // Left: author + TRP button if available
           const left = document.createElement('div');
           left.className = 'left';
-          left.innerHTML = `
-            <div>${it.author ? `Authored by: ${it.author}` : 'Authored by: —'}</div>
-            ${it.trp ? `<div class="trp">TRP: ${it.trp}</div>` : ''}
-          `;
+          
+          let authorHTML = `<div>${it.author ? `Authored by: ${it.author}` : 'Authored by: —'}</div>`;
+          if (it.trp) {
+            authorHTML += `
+              <div class="trp">
+                <button class="copy-trp" data-trp="${it.trp}">Copy TRP</button>
+              </div>`;
+          }
+          left.innerHTML = authorHTML;
           
           // Right: date
           const right = document.createElement('div');
@@ -368,6 +393,26 @@
           meta.appendChild(left);
           meta.appendChild(right);
           li.appendChild(meta);
+          
+          // Event handler for the Copy TRP button
+          if (it.trp) {
+            left.querySelector('.copy-trp').addEventListener('click', async (e) => {
+              const trp = e.currentTarget.dataset.trp;
+              try {
+                await navigator.clipboard.writeText(trp);
+                e.currentTarget.textContent = 'Copied!';
+                e.currentTarget.disabled = true;
+                setTimeout(() => {
+                  e.currentTarget.textContent = 'Copy TRP';
+                  e.currentTarget.disabled = false;
+                }, 1200);
+              } catch (err) {
+                console.error('Clipboard copy failed', err);
+                alert('Could not copy TRP automatically. Please copy manually:\n' + trp);
+              }
+            });
+          }
+
 
 
 
