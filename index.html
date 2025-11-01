@@ -61,6 +61,50 @@
       #clearFilters{ align-self:flex-end; height:36px; margin-top:22px; }
       @media (max-width:820px){ .filters{ flex-direction:column; align-items:center; } .filter{ width:min(680px,100%); } #clearFilters{ align-self:center; } }
 
+      /* Unified Controls Row (search left, filters right) */
+      .controls{
+        display:flex;
+        gap:16px;
+        align-items:flex-end;   /* lines up inputs/buttons nicely */
+        justify-content:center;
+        flex-wrap:wrap;         /* wrap on small screens */
+        margin:8px 0 18px;
+      }
+      
+      /* Let the search grow but cap its width */
+      .controls .search{
+        flex:1 1 360px;         /* grows when there’s room, shrinks when not */
+        max-width:680px;
+        display:flex;
+        gap:10px;
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.18);
+        border-radius:10px;
+        padding:10px 12px;
+      }
+      
+      /* Keep your existing input/clear styles (already present) */
+      
+      /* Filters look the same, but live inside .controls now */
+      .controls .filter{
+        display:flex;
+        flex-direction:column;
+        min-width:220px;
+      }
+      
+      /* Make the Clear Filters button align nicely at the bottom of the row */
+      #clearFilters{
+        height:36px;
+        align-self:flex-end;
+        margin:0;               /* reset any previous top margin */
+      }
+      
+      /* Mobile tweaks */
+      @media (max-width:820px){
+        #clearFilters{ align-self:center; }
+      }
+
+      
       /* Genre buttons */
       .genre-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px;margin:18px 0 12px}
       .genre-btn{
@@ -163,27 +207,26 @@
 
       <div id="genres" class="genre-row"></div>
       
-      <!-- Search (disabled until a genre is chosen) -->
-      <div class="search-wrap">
+      <!-- Controls: Search + Filters on one row -->
+      <div class="controls">
         <div class="search">
           <input id="q" type="text" placeholder="Filter current genre…" disabled>
           <button id="clear" class="clear" disabled>Clear</button>
-          <button id="searchBtn" disabled>Search</button>
         </div>
-      </div>
-
-      <!-- Filters - Category & Subcategory (disabled until a genre is chosen) -->
-      <div class="filters">
+      
         <div class="filter">
           <label>Category</label>
           <div id="catMS" class="msel" data-label="Category"></div>
         </div>
+      
         <div class="filter">
           <label>Sub-category</label>
           <div id="subMS" class="msel" data-label="Sub-category"></div>
         </div>
+      
         <button id="clearFilters" class="clear" disabled>Clear Filters</button>
       </div>
+
 
       <div id="panel" class="sublist" style="display:none;">
         <h3 id="panelTitle">Selected Genre</h3>
