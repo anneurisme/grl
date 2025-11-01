@@ -248,7 +248,7 @@
 
       // Elements (declared now; assigned after DOM is fully ready)
       let genresEl, panelEl, titleEl, listEl, footerEl, errEl;
-      let qEl, clearEl, searchBtn, clearFiltersBtn;
+      let qEl, clearEl, clearFiltersBtn;
       let catMS, subMS;
 
       // ---------- Init / Load ----------
@@ -262,7 +262,6 @@
         errEl     = document.getElementById('err');
         qEl       = document.getElementById('q');
         clearEl   = document.getElementById('clear');
-        searchBtn = document.getElementById('searchBtn');
         clearFiltersBtn = document.getElementById('clearFilters');
 
         // Build custom multiselects AFTER elements exist
@@ -368,7 +367,8 @@
         btn.classList.add('active');
 
         // enable search UI
-        qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+        qEl.disabled = false;
+        clearEl.disabled = false;
 
         // items for this genre
         currentItems = (byGenre.get(genre) || []).slice();
@@ -471,7 +471,6 @@
       function wireSearch(){
         const debounced = debounce(applyFilter, 150);
         qEl.addEventListener('input', debounced);
-        searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
         clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
         qEl.addEventListener('keydown', e => { if (e.key === 'Escape'){ qEl.value=''; applyFilter(); } });
       }
