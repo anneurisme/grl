@@ -187,11 +187,7 @@
   </head>
   <body>
     <div id="loader">
-      <pre id="sparkles">
-     ✨ ✶ 📜 ⋆ ✨
-   ⊹  The Library awakens...  ⊹
-     ✨ ⋆ 🪶 ✶ ✨
-      </pre>
+      <pre id="sparkles"></pre>
     </div>
 
     <div class="topbar">
@@ -237,6 +233,27 @@
     </div>
 
     <script>
+      // Randomized loading messages
+      const loadingMessages = [
+        "⊹  The Library awakens...  ⊹",
+        "✦   Dusting the tomes...  ✦",
+        "⋆ Organizing the archives... ✦",
+        "✶  Fetching manuscripts...  ✦",
+        "⋄ Translating from Old Gilnean... ✦",
+        "⚜  Badgering Parliament...  ⚜",
+        "✦ Sorting quills and parchment... ✦"
+      ];
+      
+      // Randomly select one
+      document.addEventListener("DOMContentLoaded", () => {
+        const msg = loadingMessages[Math.floor(Math.random() * loadingMessages.length)];
+        const sparkles = document.getElementById("sparkles");
+        if (sparkles) {
+          sparkles.textContent = ` ✨ ✶  ⋆  ✨\n ${msg}\n ✨ ⋆ ✨ ✶ ✨`;
+        }
+      });
+
+      
       // ===== Data source =====
       const API = 'https://script.google.com/macros/s/AKfycbyrsTDK1h5DJfyZkzL1Wocp3Axy8TfBEbLCkB-4FTxG3wN9Dhv2_EZ2Xau7gBk1TsDT/exec';
 
