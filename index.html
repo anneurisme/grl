@@ -138,6 +138,26 @@
           text-align: left;
         }
       }
+      .filters{
+        display:flex; gap:16px; align-items:flex-start; justify-content:center;
+        margin:8px 0 10px;
+      }
+      .filter{ display:flex; flex-direction:column; min-width:220px; }
+      .filter label{
+        font-size:14px; color:#cfd3e6; margin:0 0 6px 2px; letter-spacing:.3px;
+      }
+      select[multiple]{
+        background:rgba(255,255,255,.06);
+        border:1px solid rgba(255,255,255,.18);
+        color:#f7f1e8; border-radius:10px; padding:8px; min-height:140px;
+      }
+      select[multiple]:disabled{ opacity:.6; cursor:not-allowed; }
+      #clearFilters{ align-self:flex-end; height:36px; margin-top:22px; }
+      @media (max-width: 820px){
+        .filters{ flex-direction:column; align-items:center; }
+        .filter{ width:min(680px,100%); }
+        #clearFilters{ align-self:center; }
+      }
     </style>
   </head>
   <body>
@@ -167,8 +187,20 @@
           <button id="clear" class="clear" disabled>Clear</button>
           <button id="searchBtn" disabled>Search</button>
         </div>
+      </div>  
+      <!-- Filters: Category & Subcategory -->
+      <div class="filters">
+        <div class="filter">
+          <label for="catSel">Category</label>
+          <select id="catSel" multiple size="6" disabled></select>
+        </div>
+        <div class="filter">
+          <label for="subSel">Sub-category</label>
+          <select id="subSel" multiple size="6" disabled></select>
+        </div>
+        <button id="clearFilters" class="clear" disabled>Clear Filters</button>
       </div>
-
+      
       <div id="genres" class="genre-row"></div>
 
       <div id="panel" class="sublist" style="display:none;">
@@ -199,6 +231,13 @@
   const qEl      = document.getElementById('q');
   const clearEl  = document.getElementById('clear');
   const searchBtn= document.getElementById('searchBtn');
+  const catSel = document.getElementById('catSel');
+  const subSel = document.getElementById('subSel');
+  const clearFiltersBtn = document.getElementById('clearFilters');
+
+  catSel.disabled = true;
+  subSel.disabled = true;
+  clearFiltersBtn.disabled = true;
 
   // --- Helper to finish init (same as your old init(), but split so we can call from fetch or JSONP) ---
   function finishInit(data) {
@@ -305,6 +344,16 @@
     titleEl.textContent = genre;
     panelEl.style.display = 'block';
     qEl.value = '';
+    
+    // enable category filters now that a genre is active
+    catSel.disabled = subSel.disabled = clearFiltersBtn.disabled = false;
+    
+    // clear old options when changing genre
+    catSel.innerHTML = '';
+    subSel.innerHTML = '';
+
+    catSel.disabled = subSel.disabled = clearFiltersBtn.disabled = true;
+    
     renderList(currentItems);
   }
 
