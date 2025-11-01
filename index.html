@@ -205,301 +205,295 @@
       </div>
     </div>
 
-    <script>
-      // ===== Data source =====
-      const API = 'https://script.google.com/macros/s/AKfycbyrsTDK1h5DJfyZkzL1Wocp3Axy8TfBEbLCkB-4FTxG3wN9Dhv2_EZ2Xau7gBk1TsDT/exec';
-
-      // State
-      let rows = [];            // raw rows
-      let byGenre = new Map();  // genre -> items for that genre
-      let activeGenre = null;
-      let currentItems = [];    // items for active genre (unfiltered)
-
-      // Elements
-      const genresEl  = document.getElementById('genres');
-      const panelEl   = document.getElementById('panel');
-      const titleEl   = document.getElementById('panelTitle');
-      const listEl    = document.getElementById('items');
-      const footerEl  = document.getElementById('footer');
-      const errEl     = document.getElementById('err');
-      const qEl       = document.getElementById('q');
-      const clearEl   = document.getElementById('clear');
-      const searchBtn = document.getElementById('searchBtn');
-      const catSel    = document.getElementById('catSel');
-      const subSel    = document.getElementById('subSel');
-      const clearFiltersBtn = document.getElementById('clearFilters');
-      const catMS = makeMultiselect(document.getElementById('catMS'));
-      const subMS = makeMultiselect(document.getElementById('subMS'));
-      const clearFiltersBtn = document.getElementById('clearFilters');
-
-      // Start disabled
-      catSel.disabled = subSel.disabled = clearFiltersBtn.disabled = true;
-
-      // ---------- Init / Load ----------
-      function finishInit(data){
-        document.getElementById('loader').classList.add('fade');
-
-        rows = Array.isArray(data) ? data : [];
-        byGenre = new Map();
-
-        for (const r of rows){
-          const g = (r?.genre || '').toString().trim();
-          const t = (r?.text  || '').toString().trim();
-          if (!g || !t) continue;
-          if (!byGenre.has(g)) byGenre.set(g, []);
-          byGenre.get(g).push({
-            text: t,
-            url: r?.url || null,
-            author: (r?.author || '').toString(),
-            date: (r?.date || '').toString(),
-            category: (r?.category || '').toString(),
-            subcategory: (r?.subcategory || '').toString()
-          });
-        }
-
-        renderGenres();
-        wireSearch();
-
-        // Filter events
-        catSel.addEventListener('change', applyFilter);
-        subSel.addEventListener('change', applyFilter);
-        // Filter events
-        clearFiltersBtn.addEventListener('click', e=>{
-          e.preventDefault();
-          catMS.clear(); subMS.clear();
-          applyFilter();
-        });
-
-      }
-
-      function makeMultiselect(root){
-        const label = root.dataset.label || 'Options';
-        const state = { selected:new Set(), disabled:true };
+      <script>
+        // ===== Data source =====
+        const API = 'https://script.google.com/macros/s/AKfycbyrsTDK1h5DJfyZkzL1Wocp3Axy8TfBEbLCkB-4FTxG3wN9Dhv2_EZ2Xau7gBk1TsDT/exec';
       
-        const control = document.createElement('button');
-        control.type = 'button';
-        control.className = 'control';
-        control.textContent = `All ${label.toLowerCase()}s`;
-        const menu = document.createElement('div'); menu.className = 'menu';
-        root.append(control, menu);
+        // State
+        let rows = [];            // raw rows
+        let byGenre = new Map();  // genre -> items
+        let activeGenre = null;
+        let currentItems = [];    // items for active genre (unfiltered)
       
-        function displayText(){
-          const n = state.selected.size;
-          return n ? `${n} selected` : `All ${label.toLowerCase()}s`;
-        }
-        function setOptions(values){
-          menu.innerHTML = '';
-          state.selected.clear();
-          values.slice().sort((a,b)=>a.localeCompare(b)).forEach(v=>{
-            const row = document.createElement('label'); row.className = 'row';
-            const cb  = document.createElement('input'); cb.type='checkbox'; cb.value=v;
-            const sp  = document.createElement('span');  sp.textContent=v;
-            row.append(cb, sp); menu.appendChild(row);
-            cb.addEventListener('change', ()=>{
-              cb.checked ? state.selected.add(v) : state.selected.delete(v);
-              control.textContent = displayText();
-              applyFilter();
+        // Elements
+        const genresEl  = document.getElementById('genres');
+        const panelEl   = document.getElementById('panel');
+        const titleEl   = document.getElementById('panelTitle');
+        const listEl    = document.getElementById('items');
+        const footerEl  = document.getElementById('footer');
+        const errEl     = document.getElementById('err');
+        const qEl       = document.getElementById('q');
+        const clearEl   = document.getElementById('clear');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+      
+        // Custom multi-selects (for dropdown UI)
+        const catMS = makeMultiselect(document.getElementById('catMS'));
+        const subMS = makeMultiselect(document.getElementById('subMS'));
+        catMS.setDisabled(true);
+        subMS.setDisabled(true);
+        clearFiltersBtn.disabled = true;
+      
+        // ---------- Init / Load ----------
+        window.addEventListener('load', () => {
+          // Safety timeout so we never stay stuck
+          const slowTimer = setTimeout(() => {
+            if (!document.getElementById('loader').classList.contains('fade')) {
+              showErr('Loading is taking longer than expected. Please check the API URL or try again.');
+            }
+          }, 10000);
+      
+          fetch(API, { mode: 'cors' })
+            .then(r => {
+              if (!r.ok) throw new Error('Network error: ' + r.status);
+              return r.json();
+            })
+            .then(({ data }) => { clearTimeout(slowTimer); finishInit(data); })
+            .catch(err => {
+              console.warn('Fetch failed, falling back to JSONP:', err);
+              clearTimeout(slowTimer);
+              loadViaJSONP();
             });
+        });
+      
+        function finishInit(data){
+          // hide loader
+          document.getElementById('loader').classList.add('fade');
+      
+          rows = Array.isArray(data) ? data : [];
+          byGenre = new Map();
+      
+          for (const r of rows){
+            const g = (r?.genre || '').toString().trim();
+            const t = (r?.text  || '').toString().trim();
+            if (!g || !t) continue;
+            if (!byGenre.has(g)) byGenre.set(g, []);
+            byGenre.get(g).push({
+              text: t,
+              url: r?.url || null,
+              author: (r?.author || '').toString(),
+              date: (r?.date || '').toString(),
+              category: (r?.category || '').toString(),
+              subcategory: (r?.subcategory || '').toString()
+            });
+          }
+      
+          renderGenres();
+          wireSearch();
+      
+          clearFiltersBtn.addEventListener('click', e => {
+            e.preventDefault();
+            catMS.clear(); subMS.clear();
+            applyFilter();
           });
-          control.textContent = displayText();
         }
-        function setDisabled(d){
-          state.disabled = d;
-          root.classList.toggle('disabled', d);
-          control.disabled = d;
-          if (d) root.classList.remove('open');
-        }
-        function clear(){
-          state.selected.clear();
-          menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
-          control.textContent = displayText();
-        }
-        control.addEventListener('click', ()=>{
-          if (state.disabled) return;
-          root.classList.toggle('open');
-        });
-        // click outside to close
-        document.addEventListener('click', (e)=>{
-          if (!root.contains(e.target)) root.classList.remove('open');
-        });
       
-        return {
-          setOptions, setDisabled, clear,
-          getSelected: () => new Set(state.selected)
-        };
-      }
+        // JSONP fallback (no CORS required)
+        function loadViaJSONP(){
+          const cb = 'initFromAPI_' + Math.random().toString(36).slice(2);
+          let script;
+          window[cb] = function(payload){
+            try { finishInit(payload && payload.data); }
+            catch(e){ showErr('JSONP parse error: ' + (e?.message || e)); }
+            finally{
+              delete window[cb];
+              if (script && script.parentNode) script.parentNode.removeChild(script);
+            }
+          };
+          const url = API + (API.includes('?') ? '&' : '?') + 'callback=' + encodeURIComponent(cb);
+          script = document.createElement('script');
+          script.src = url;
+          script.onerror = () => showErr('JSONP load failed. Check your /exec URL.');
+          document.head.appendChild(script);
+        }
       
-      function unique(arr){ return [...new Set(arr)]; }
-
-
-      function showErr(msg){
-        document.getElementById('loader').classList.add('fade');
-        panelEl.style.display = 'block';
-        titleEl.textContent = 'Error';
-        listEl.innerHTML = '';
-        footerEl.textContent = '';
-        errEl.textContent = msg;
-        console.error(msg);
-      }
-
-      function loadViaJSONP(){
-        const cb = 'initFromAPI_' + Math.random().toString(36).slice(2);
-        window[cb] = function(payload){
-          try { finishInit(payload && payload.data); }
-          catch(e){ showErr('JSONP parse error: ' + (e?.message||e)); }
-          finally{ delete window[cb]; if (script && script.parentNode) script.parentNode.removeChild(script); }
-        };
-        const url = API + (API.includes('?') ? '&' : '?') + 'callback=' + encodeURIComponent(cb);
-        const script = document.createElement('script');
-        script.src = url;
-        script.onerror = () => showErr('JSONP load failed. Check your /exec URL.');
-        document.head.appendChild(script);
-      }
-
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const loader = document.getElementById('loader');
-          if (loader && !loader.classList.contains('fade')) {
-            showErr('Loading is taking longer than expected. Please check the API URL or try again.');
+        function showErr(msg){
+          document.getElementById('loader').classList.add('fade');
+          panelEl.style.display = 'block';
+          titleEl.textContent = 'Error';
+          listEl.innerHTML = '';
+          footerEl.textContent = '';
+          errEl.textContent = msg;
+          console.error(msg);
+        }
+      
+        // ---------- Rendering ----------
+        function renderGenres(){
+          genresEl.innerHTML = '';
+          const genres = Array.from(byGenre.keys()).sort((a,b)=>a.localeCompare(b));
+          if (!genres.length){
+            genresEl.innerHTML = `<div class="empty">No genres found.</div>`;
+            return;
           }
-        }, 8000);
-
-        fetch(API, { mode: 'cors' })
-          .then(r => { if (!r.ok) throw new Error('Network error: ' + r.status); return r.json(); })
-          .then(({ data }) => finishInit(data))
-          .catch(err => { console.warn('Fetch failed, using JSONP:', err); loadViaJSONP(); });
-      });
-
-      // ---------- Rendering ----------
-      function renderGenres(){
-        genresEl.innerHTML = '';
-        const genres = Array.from(byGenre.keys()).sort((a,b)=>a.localeCompare(b));
-        if (!genres.length){
-          genresEl.innerHTML = `<div class="empty">No genres found.</div>`;
-          return;
+          genres.forEach(g => {
+            const btn = document.createElement('button');
+            btn.className = 'genre-btn';
+            btn.textContent = g;
+            btn.onclick = () => selectGenre(g, btn);
+            genresEl.appendChild(btn);
+          });
         }
-        genres.forEach(g => {
-          const btn = document.createElement('button');
-          btn.className = 'genre-btn';
-          btn.textContent = g;
-          btn.onclick = () => selectGenre(g, btn);
-          genresEl.appendChild(btn);
-        });
-      }
-
-      function selectGenre(genre, btn){
-  activeGenre = genre;
-  document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-
-  // enable search UI
-  qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
-
-  // items for this genre
-  currentItems = (byGenre.get(genre) || []).slice();
-  titleEl.textContent = genre;
-  panelEl.style.display = 'block';
-  qEl.value = '';
-
-  // enable & populate dropdowns
-  catMS.setDisabled(false);
-  subMS.setDisabled(false);
-  const cats = unique(currentItems.map(it => it.category).filter(Boolean));
-  const subs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
-  catMS.setOptions(cats);
-  subMS.setOptions(subs);
-
-  clearFiltersBtn.disabled = false;
-
-  renderList(currentItems);
-}
-
-
-      function renderList(items){
-        errEl.textContent = '';
-        listEl.innerHTML = '';
-        if (!items.length){
-          listEl.innerHTML = `<li class="empty">No entries for this genre.</li>`;
-          footerEl.textContent = '0 items';
-          return;
+      
+        function selectGenre(genre, btn){
+          activeGenre = genre;
+          document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+      
+          // enable search UI
+          qEl.disabled = clearEl.disabled = searchBtn.disabled = false;
+      
+          // items for this genre
+          currentItems = (byGenre.get(genre) || []).slice();
+          titleEl.textContent = genre;
+          panelEl.style.display = 'block';
+          qEl.value = '';
+      
+          // enable & populate dropdowns
+          catMS.setDisabled(false);
+          subMS.setDisabled(false);
+          const cats = unique(currentItems.map(it => it.category).filter(Boolean));
+          const subs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
+          catMS.setOptions(cats);
+          subMS.setOptions(subs);
+      
+          clearFiltersBtn.disabled = false;
+      
+          renderList(currentItems);
         }
-        for (const it of items){
-          const li = document.createElement('li');
-
-          if (it.url){
-            const a = document.createElement('a');
-            a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
-            a.textContent = it.text;
-            li.appendChild(a);
-          } else {
-            const title = document.createElement('div');
-            title.textContent = it.text;
-            title.style.fontSize = '18px';
-            li.appendChild(title);
+      
+        function renderList(items){
+          errEl.textContent = '';
+          listEl.innerHTML = '';
+          if (!items.length){
+            listEl.innerHTML = `<li class="empty">No entries for this genre.</li>`;
+            footerEl.textContent = '0 items';
+            return;
           }
-
-          const meta = document.createElement('div');
-          meta.className = 'meta';
-          const left = document.createElement('span');
-          left.className = 'left';
-          left.textContent = it.author ? `Authored by: ${it.author}` : 'Authored by: —';
-          const right = document.createElement('span');
-          right.className = 'right';
-          right.textContent = it.date ? `Publishing Date: ${it.date}` : 'Publishing Date: —';
-          meta.appendChild(left);
-          meta.appendChild(right);
-          li.appendChild(meta);
-
-          listEl.appendChild(li);
+          for (const it of items){
+            const li = document.createElement('li');
+      
+            if (it.url){
+              const a = document.createElement('a');
+              a.href = it.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+              a.textContent = it.text;
+              li.appendChild(a);
+            } else {
+              const title = document.createElement('div');
+              title.textContent = it.text;
+              title.style.fontSize = '18px';
+              li.appendChild(title);
+            }
+      
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            const left = document.createElement('span');
+            left.className = 'left';
+            left.textContent = it.author ? `Authored by: ${it.author}` : 'Authored by: —';
+            const right = document.createElement('span');
+            right.className = 'right';
+            right.textContent = it.date ? `Publishing Date: ${it.date}` : 'Publishing Date: —';
+            meta.appendChild(left);
+            meta.appendChild(right);
+            li.appendChild(meta);
+      
+            listEl.appendChild(li);
+          }
+          footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
         }
-        footerEl.textContent = `${items.length} item${items.length===1?'':'s'}`;
-      }
-
-      // ---------- Filtering ----------
-      function wireSearch(){
-        const debounced = debounce(applyFilter, 150);
-        qEl.addEventListener('input', debounced);
-        searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
-        clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
-        qEl.addEventListener('keydown', e => { if (e.key === 'Escape'){ qEl.value=''; applyFilter(); } });
-      }
-
-      function applyFilter(){
-        if (!activeGenre) return;
       
-        const q = qEl.value.trim().toLowerCase();
+        // ---------- Filtering ----------
+        function wireSearch(){
+          const debounced = debounce(applyFilter, 150);
+          qEl.addEventListener('input', debounced);
+          searchBtn.addEventListener('click', e => { e.preventDefault(); applyFilter(); });
+          clearEl.addEventListener('click', e => { e.preventDefault(); qEl.value=''; applyFilter(); });
+          qEl.addEventListener('keydown', e => { if (e.key === 'Escape'){ qEl.value=''; applyFilter(); } });
+        }
       
-        const selCats = catMS.getSelected();
-        const selSubs = subMS.getSelected();
-        const hasCat  = selCats.size > 0;
-        const hasSub  = selSubs.size > 0;
+        function applyFilter(){
+          if (!activeGenre) return;
       
-        const filtered = currentItems.filter(it => {
-          // text search (title + author)
-          const hay = ((it.text||'') + ' ' + (it.author||'')).toLowerCase();
-          if (q && !hay.includes(q)) return false;
+          const q = qEl.value.trim().toLowerCase();
       
-          if (hasCat && !selCats.has(it.category || '')) return false;
-          if (hasSub && !selSubs.has(it.subcategory || '')) return false;
+          const selCats = catMS.getSelected();
+          const selSubs = subMS.getSelected();
+          const hasCat  = selCats.size > 0;
+          const hasSub  = selSubs.size > 0;
       
-          return true;
-        });
+          const filtered = currentItems.filter(it => {
+            // search over title + author
+            const hay = ((it.text||'') + ' ' + (it.author||'')).toLowerCase();
+            if (q && !hay.includes(q)) return false;
       
-        renderList(filtered);
-      }
-
-
-      // ---------- Helpers ----------
-      function unique(arr){ return [...new Set(arr)]; }
-      function populateMultiSelect(selectEl, values){
-        selectEl.innerHTML = '';
-        values.sort((a,b)=>a.localeCompare(b)).forEach(v=>{
-          const opt = document.createElement('option');
-          opt.value = v; opt.textContent = v;
-          selectEl.appendChild(opt);
-        });
-      }
-      function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
-    </script>
+            if (hasCat && !selCats.has(it.category || '')) return false;
+            if (hasSub && !selSubs.has(it.subcategory || '')) return false;
+      
+            return true;
+          });
+      
+          renderList(filtered);
+        }
+      
+        // ---------- Helpers ----------
+        function unique(arr){ return [...new Set(arr)]; }
+        function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
+      
+        // Custom multi-select dropdown
+        function makeMultiselect(root){
+          const label = root.dataset.label || 'Options';
+          const state = { selected:new Set(), disabled:true };
+      
+          const control = document.createElement('button');
+          control.type = 'button';
+          control.className = 'control';
+          control.textContent = `All ${label.toLowerCase()}s`;
+          const menu = document.createElement('div'); menu.className = 'menu';
+          root.append(control, menu);
+      
+          function displayText(){
+            const n = state.selected.size;
+            return n ? `${n} selected` : `All ${label.toLowerCase()}s`;
+          }
+          function setOptions(values){
+            menu.innerHTML = '';
+            state.selected.clear();
+            values.slice().sort((a,b)=>a.localeCompare(b)).forEach(v=>{
+              const row = document.createElement('label'); row.className = 'row';
+              const cb  = document.createElement('input'); cb.type='checkbox'; cb.value=v;
+              const sp  = document.createElement('span');  sp.textContent=v;
+              row.append(cb, sp); menu.appendChild(row);
+              cb.addEventListener('change', ()=>{
+                cb.checked ? state.selected.add(v) : state.selected.delete(v);
+                control.textContent = displayText();
+                applyFilter();
+              });
+            });
+            control.textContent = displayText();
+          }
+          function setDisabled(d){
+            state.disabled = d;
+            root.classList.toggle('disabled', d);
+            control.disabled = d;
+            if (d) root.classList.remove('open');
+          }
+          function clear(){
+            state.selected.clear();
+            menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
+            control.textContent = displayText();
+          }
+          control.addEventListener('click', ()=>{
+            if (state.disabled) return;
+            root.classList.toggle('open');
+          });
+          document.addEventListener('click', (e)=>{
+            if (!root.contains(e.target)) root.classList.remove('open');
+          });
+      
+          return {
+            setOptions, setDisabled, clear,
+            getSelected: () => new Set(state.selected)
+          };
+        }
+      </script>
   </body>
 </html>
