@@ -451,7 +451,15 @@
 
         clearFiltersBtn.disabled = false;
         sortSel.disabled = false;
-        sortSel.value = '';  // default value, leave blank for now since it doesn't sort by this on initiation and it's awkward for now.
+        
+        // Set default sort to "Newest" only the first time after load
+        if (!sortSel.dataset.initialized) {
+          sortSel.value = 'date-newest';
+          sortSel.dataset.initialized = 'true';
+        } else {
+          // Keep user's last selection if they changed it previously
+          sortSel.value = sortSel.value || 'date-newest';
+        }
 
         renderList(currentItems);
       }
