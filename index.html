@@ -662,23 +662,24 @@
       };
 
       // Date parsing to use standard Gilnean AR/BR year markers.
-      // e.g Parse "Month 10th, 4BR" -> numeric timeline key where BR < 0 < AR.
-      // 1BR => -1, 1AR => +1. Higher = newer.
+      // Mapping: 2AR = 2, 1AR = 1, 1BR = -1, 2BR = -2 (no year 0).
+      // IMPORTANT: Month/day ordering is preserved inside BOTH eras.
+      // Newer dates always have a larger key, regardless of era.
       function parseLoreDate(str){
         if (!str) return null;
         const s = String(str).trim();
         const m = s.match(/^([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?\s*,\s*(\d+)\s*([AB]\s*R)$/i);
         if (!m) return null;
+      
         const month = MONTHS[m[1].toLowerCase()];
         const day   = parseInt(m[2], 10);
         const year  = parseInt(m[3], 10);
         const era   = m[4].replace(/\s+/g,'').toUpperCase(); // "AR" or "BR"
-        if (!month || !day || !year || (era!=="AR" && era!=="BR")) return null;
       
-        // Map to a sortable scalar. No year 0, but we only need relative order.
-        const sign = (era === "AR") ? +1 : -1;
-        // Weight year > month > day so normal chronological order within year.
-        return sign * (year * 10000 + month * 100 + day);
+        if (!month || !day || !year || (era !== "AR" && era !== "BR")) return null;
+        const within = (month * 100 + day) / 10000; 
+        if (era === "AR") return year + within;
+        return -year + within;
       }
 
       // Sort functionality
