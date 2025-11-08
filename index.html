@@ -331,6 +331,7 @@
       let byGenre = new Map();
       let activeGenre = null;
       let currentItems = [];
+      let catSubIndex = new Map();
 
       // Elements
       let genresEl, panelEl, titleEl, listEl, footerEl, errEl;
@@ -354,7 +355,7 @@
         sortSel.addEventListener('change', () => applyFilter());
 
         // Build custom Multi-Select controls
-        catMS = makeMultiselect(document.getElementById('catMS'));
+        catMS = makeMultiselect(document.getElementById('catMS'), { onChange: handleCategoryChange });
         subMS = makeMultiselect(document.getElementById('subMS'));
         catMS.setDisabled(true);
         subMS.setDisabled(true);
@@ -467,6 +468,7 @@
 
         // items for this genre
         currentItems = (byGenre.get(genre) || []).slice();
+        
         titleEl.textContent = genre;
         panelEl.style.display = 'block';
         qEl.value = '';
@@ -474,10 +476,18 @@
         // enable + populate dropdowns
         catMS.setDisabled(false);
         subMS.setDisabled(false);
+        
+        // Build a category → subcategory index for this genre
+        catSubIndex = buildCatSubIndex(currentItems);
+        
+        // Categories for this genre
         const cats = unique(currentItems.map(it => it.category).filter(Boolean));
-        const subs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
+        
+        // All subcategories in this genre (initially full set)
+        const allSubs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
+        
         catMS.setOptions(cats);
-        subMS.setOptions(subs);
+        subMS.setOptions(allSubs);
 
         clearFiltersBtn.disabled = false;
         sortSel.disabled = false;
@@ -606,8 +616,41 @@
       function unique(arr){ return [...new Set(arr)]; }
       function debounce(fn, wait){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; }
 
+      function buildCatSubIndex(items){
+        const m = new Map(); // cat -> Set(subs)
+        for (const it of items) {
+          const cat = (it.category || '').trim();
+          const sub = (it.subcategory || '').trim();
+          if (!cat) continue;
+          if (!m.has(cat)) m.set(cat, new Set());
+          if (sub) m.get(cat).add(sub);
+        }
+        return m;
+      }
+
+      function handleCategoryChange(selectedCats){
+      // If no categories selected, allow all sub-categories for the active genre
+      if (!activeGenre) return;
+    
+      let allowed = new Set();
+      if (selectedCats && selectedCats.size > 0) {
+        for (const c of selectedCats) {
+          const subs = catSubIndex.get(c);
+          if (subs) subs.forEach(s => allowed.add(s));
+        }
+      } else {
+        // All subs in genre
+        for (const subs of catSubIndex.values()) {
+          subs.forEach(s => allowed.add(s));
+        }
+      }
+    
+      // Rebuild Sub-category options; preserve any still-valid selections automatically
+      subMS.setOptions([...allowed]); // preserves selected where still valid
+    }
+
       // Custom multi-select dropdown (with guard)
-      function makeMultiselect(root){
+      function makeMultiselect(root, opts = {}){
         if (!root) {
           console.error('Multiselect root not found');
           // No-op shim so the app doesn’t crash
@@ -615,34 +658,52 @@
         }
         const label = root.dataset.label || 'Options';
         const state = { selected:new Set(), disabled:true };
-
+      
         const control = document.createElement('button');
         control.type = 'button';
         control.className = 'control';
         control.textContent = `All ${label.toLowerCase()}s`;
         const menu = document.createElement('div'); menu.className = 'menu';
         root.append(control, menu);
-
+      
         function displayText(){
           const n = state.selected.size;
           return n ? `${n} selected` : `All ${label.toLowerCase()}s`;
         }
-        function setOptions(values){
+      
+        // NEW: `values` (array of strings); opts.preserve (default true)
+        function setOptions(values, localOpts = {}){
+          const preserve = localOpts.preserve !== false;           // default: true
+          const prev = preserve ? new Set(state.selected) : new Set();
+      
           menu.innerHTML = '';
           state.selected.clear();
+      
           values.slice().sort((a,b)=>a.localeCompare(b)).forEach(v=>{
             const row = document.createElement('label'); row.className = 'row';
             const cb  = document.createElement('input'); cb.type='checkbox'; cb.value=v;
             const sp  = document.createElement('span');  sp.textContent=v;
             row.append(cb, sp); menu.appendChild(row);
+      
+            // Restore previous selection if still valid
+            if (prev.has(v)) { cb.checked = true; state.selected.add(v); }
+      
             cb.addEventListener('change', ()=>{
               cb.checked ? state.selected.add(v) : state.selected.delete(v);
               control.textContent = displayText();
-              applyFilter();
+              // NEW: invoke optional change callback with a defensive copy
+              if (typeof opts.onChange === 'function') {
+                opts.onChange(new Set(state.selected));
+              }
+              // Existing behavior: live-filter
+              if (typeof window.applyFilter === 'function') {
+                applyFilter();
+              }
             });
           });
           control.textContent = displayText();
         }
+      
         function setDisabled(d){
           state.disabled = d;
           root.classList.toggle('disabled', d);
@@ -653,6 +714,12 @@
           state.selected.clear();
           menu.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=false);
           control.textContent = displayText();
+          if (typeof opts.onChange === 'function') {
+            opts.onChange(new Set(state.selected));
+          }
+          if (typeof window.applyFilter === 'function') {
+            applyFilter();
+          }
         }
         control.addEventListener('click', ()=>{
           if (state.disabled) return;
@@ -661,7 +728,7 @@
         document.addEventListener('click', (e)=>{
           if (!root.contains(e.target)) root.classList.remove('open');
         });
-
+      
         return {
           setOptions, setDisabled, clear,
           getSelected: () => new Set(state.selected)
