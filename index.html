@@ -13,12 +13,39 @@
       html,body{height:100%;}
       body{margin:0;background:var(--navy);color:#f7f1e8;font-family:"Garamond","Georgia",system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
       
-      /* Home Office Header Area */
+      /* Home Office Header Area (Left) */
       .topbar{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px dashed rgba(255,255,255,.15)}
       .topbar .seal{ width:60px; height:60px; border-radius:50%; object-fit:cover; display:inline-block; box-shadow:0 0 0 2px rgba(255,255,255,0.15) inset; }
       @media (max-width:480px){ .topbar .seal{ width:60px; height:60px; } }
       .topbar .ministry{opacity:.9;font-size:26px;letter-spacing:.3px}
       .wrap{max-width:1100px;margin:0 auto;padding:0 24px 48px}
+
+      /* Submit Button (Top Right) */
+      .submit-btn {
+        margin-left: auto;
+        background: var(--gold);
+        color: var(--navy);
+        text-decoration: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 16px;
+        box-shadow: 0 2px 6px rgba(0,0,0,.25);
+        transition: background .2s ease, transform .1s ease;
+      }
+      .submit-btn:hover {
+        background: #e6ae46;
+        transform: translateY(-1px);
+      }
+      .submit-btn:active {
+        transform: translateY(0);
+      }
+      @media (max-width:480px){
+        .submit-btn{
+          font-size: 14px;
+          padding: 8px 12px;
+        }
+      }
       
       /* Library Title Area */
       .title{text-align:center;margin:28px 0 10px;font-size:54px;letter-spacing:2px;color:var(--gold);font-weight:600;text-transform:uppercase}
@@ -221,6 +248,9 @@
     <div class="topbar">
       <img class="seal" src="assets/seal.png" alt="Ministry of the Home Office Seal" loading="lazy" />
       <div class="ministry">Ministry of the Home Office</div>
+      <a class="submit-btn" href="https://docs.google.com/forms/d/e/1FAIpQLSc99A7brY4Ur1eXx9KtcYam1LH4R_ZlRiNqJehKzd_kKN_-PA/viewform" target="_blank" rel="noopener noreferrer">
+        Submit a New Document
+      </a>
     </div>
 
     <div class="wrap">
