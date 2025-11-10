@@ -269,12 +269,13 @@
       
         <div class="filter">
           <label>Category</label>
-          <div id="catMS" class="msel" data-label="Category"></div>
+          <div id="catMS" class="msel" data-label="Category" data-plural="Categories"></div>
+
         </div>
       
         <div class="filter">
           <label>Sub-category</label>
-          <div id="subMS" class="msel" data-label="Sub-category"></div>
+          <div id="subMS" class="msel" data-label="Sub-category" data-plural="Sub-categories"></div>
         </div>
       
         <button id="clearFilters" class="clear" disabled>Clear Filters</button>
@@ -657,6 +658,7 @@
           return { setOptions(){}, setDisabled(){}, clear(){}, getSelected(){ return new Set(); } };
         }
         const label = root.dataset.label || 'Options';
+        const plural = root.dataset.plural || (label + 's');
         const state = { selected:new Set(), disabled:true };
       
         const control = document.createElement('button');
@@ -668,7 +670,7 @@
       
         function displayText(){
           const n = state.selected.size;
-          return n ? `${n} selected` : `All ${label.toLowerCase()}s`;
+          return n ? `${n} selected` : `All ${plural.toLowerCase()}`;
         }
       
         // NEW: `values` (array of strings); opts.preserve (default true)
