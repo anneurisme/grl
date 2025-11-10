@@ -659,6 +659,7 @@
         }
         const label  = root.dataset.label || 'Options';
         const plural = (root.dataset.plural || (label + 's')).toLowerCase();
+        const state  = { selected: new Set(), disabled: true };
         
         const control = document.createElement('button');
         control.type = 'button';
