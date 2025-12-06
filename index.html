@@ -458,28 +458,28 @@
         document.querySelectorAll('.genre-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
 
-        // enable search UI
+        // Enable search UI
         qEl.disabled = false;
         clearEl.disabled = false;
 
-        // items for this genre
+        // Items for this genre
         currentItems = (byGenre.get(genre) || []).slice();
         
         titleEl.textContent = genre;
         panelEl.style.display = 'block';
         qEl.value = '';
 
-        // enable + populate dropdowns
+        // Enable + populate dropdowns
         catMS.setDisabled(false);
         subMS.setDisabled(false);
         
-        // Build a category → subcategory index for this genre
+        // Build a category > subcategory index for this genre
         catSubIndex = buildCatSubIndex(currentItems);
         
         // Categories for this genre
         const cats = unique(currentItems.map(it => it.category).filter(Boolean));
         
-        // All subcategories in this genre (initially full set)
+        // All subcategories in this genre
         const allSubs = unique(currentItems.map(it => it.subcategory).filter(Boolean));
         
         catMS.setOptions(cats);
@@ -543,7 +543,7 @@
           const right = document.createElement('div');
           right.className = 'right';
 
-          // Build "Genre > Category > Sub-category" path, using only populated pieces
+          // Build "Genre > Category > Sub-category" if they exist
           const pathParts = [];
           if (it.genre || activeGenre) {
             pathParts.push(it.genre || activeGenre);
@@ -563,7 +563,7 @@
             right.appendChild(pathLine);
           }
 
-          // Date line (always present)
+          // Publish Date
           const dateLine = document.createElement('div');
           dateLine.textContent = it.date
             ? `Publishing Date: ${it.date}`
@@ -663,7 +663,7 @@
           }
         }
       
-        // Rebuild Sub-category options; preserve any still-valid selections automatically
+        // Rebuild Sub-category options, preserve any still-valid selections automatically
         subMS.setOptions([...allowed]); // preserves selected where still valid
       }
 
@@ -682,7 +682,7 @@
         control.type = 'button';
         control.className = 'control';
         
-        // helper for “no selection” text
+        // Helper for “no selection” text
         function allText(){ return `All ${plural}`; }
         control.textContent = allText();
         
